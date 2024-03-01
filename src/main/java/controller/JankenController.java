@@ -62,30 +62,37 @@ public class JankenController extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
+		
 		int numBot = Integer.parseInt(request.getParameter("numBot"));
 		
 		Random random = new Random();
 		
 		Janken userMove = getUserMove(request.getParameter("selectedJanken"));
 		
-		List<Janken> botsMove = new ArrayList<>();
-		List<String> botsMoveList = new ArrayList<>();
+		List<Janken> botsMove = new ArrayList<>();      // Track the bots move in Janken enum
+		List<String> botsMoveList = new ArrayList<>();  // Record the bots move: "rock", "scissor", or "paper"
 		for (int i = 0; i < numBot; i++) {
 			botsMove.add(getBotMove(random.nextInt(3)));
 			botsMoveList.add("Images/" + botsMove.get(i).type + ".png");
 		}
 		
-		String resultMessage = getGameResult(userMove, botsMove);
-		String userMoveStr = "Images/" + userMove.type + ".png";
+		String resultMessage = getGameResult(userMove, botsMove); // "引き分け", "勝ち", or "負け"
+		String userMoveStr = "Images/" + userMove.type + ".png";  // e.g. Images/paper.ing
 		
-		request.setAttribute("result", resultMessage);
-		request.setAttribute("userMove", userMoveStr);	
+		request.setAttribute("result", resultMessage); // "引き分け", "勝ち", or "負け"
+		request.setAttribute("userMove", userMoveStr); // Images/paper.ing, Images/rock.ing, or Images/scissors.ing
 		request.setAttribute("botsMoveList", botsMoveList);	
 		RequestDispatcher dispatcher = request.getRequestDispatcher("WEB-INF/views/result.jsp");
 		dispatcher.forward(request, response);
 	}
 	
+	/**
+	 * Get the result of the game.
+	 * 
+	 * @param userMove
+	 * @param botMove
+	 * @return "引き分け", "勝ち", or "負け" based on the user's input and bots
+	 */
 	public String getGameResult(Janken userMove, List<Janken> botMove) {
 		if (botMove.size() == 1) {
 			return getResult(userMove, botMove.get(0));
@@ -93,12 +100,26 @@ public class JankenController extends HttpServlet {
 		return getGameResultMultiple(userMove, botMove);
 	}
 	
+	/**
+	 * Get the game result if 2 or more bots are deployed.
+	 * 
+	 * @param userMove
+	 * @param botMove
+	 * @return "引き分け", "勝ち", or "負け" based on the user's input and bots
+	 */
 	public String getGameResultMultiple(Janken userMove, List<Janken> botMove) {
-		Set<String> set = new HashSet<>();
+		/**
+		 * Use set to record the game situation.
+		 * By using set, we can reasonably ignore the duplicate, since 
+		 *   we don't care about duplicates. (2 rocks and 4 rocks, as long as they are played by bots it doesn't mater)
+		 */
+		Set<String> set = new HashSet<>();  
 		set.add(userMove.type);
 		for (int i = 0; i < botMove.size(); i++) {
 			set.add(botMove.get(i).type);
 		}
+		
+		// if the set contains paper, rock, and scissor, it must be a draw
 		if (set.contains(Janken.PAPER.type) && 
 			set.contains(Janken.ROCK.type) && 
 			set.contains(Janken.SCISSORS.type)) {
@@ -106,26 +127,43 @@ public class JankenController extends HttpServlet {
 		}
 		
 		set.remove(userMove.type); // Now the set only contains the bots' move
+		
 		/**
-		 * Case 1: {user: paper, set(scissor, 
-		 * 
-		 * 
+		 * User's move is passed in the argument.
+		 * The set only contains the bot's move, and there are no duplicate.
+		 * Since there are no dulicate for bots move, it is 1 vs 1, or a user vs a bot.
+		 * Therefore, the only possible situation is either user wins or loses.
+		 * So, we can safely call the function getResult to obtain the game result in string. 
 		 */
+		
+		// First, obtain the bot's move in string format
 		String tmpp = "";
 		for (String each : set) {
-			System.out.println(each);
 			tmpp = each;
 		}
+		
+		// Then, prepare a Janken for bot
 		Janken tmp = Janken.PAPER;
-
+		
 		if (tmpp.equals("rock")) {
 			tmp = Janken.ROCK;
 		} else if (tmpp.equals("scissors")) {
 			tmp = Janken.SCISSORS;
 		}
+		
+		// After we have bot's move in Janken, call getResult with userMove Janken and tmp Janken
 		return getResult(userMove, tmp);
 	}
 	
+	/**
+	 * Determine if user wins a single bot.
+	 * Based on the Janken enum, 0 is rock, 1 is scissor, and 2 is paper.
+	 * So, 0 wins 1, 1 wins 2, and 2 wins 0.
+	 * 
+	 * @param userInput
+	 * @param bot
+	 * @return true is user wins, false otherwise
+	 */
 	public boolean userWins(int userInput, int bot) {
 		return (userInput == 0 && bot == 1) || (userInput == 1 && bot == 2) || (userInput == 2 && bot == 0);
 	}
@@ -134,6 +172,13 @@ public class JankenController extends HttpServlet {
 		return userInput == bot;
 	}
 	
+	/**
+	 * Get the game result of a user vs a bot.
+	 * 
+	 * @param userInput
+	 * @param bot
+	 * @return "引き分け", "勝ち", or "負け"
+	 */
 	public String getResult(Janken userInput, Janken bot) {
 		if (isDraw(userInput.value, bot.value)) {
 			return "引き分け";
@@ -145,6 +190,12 @@ public class JankenController extends HttpServlet {
 		
 	}
 	
+	/**
+	 * Get the user's move based on the http servlet request.
+	 * 
+	 * @param move
+	 * @return PAPER, ROCK, or SCISSORS of Janken enum
+	 */
 	public Janken getUserMove(String move) {
 		if (move.equals("paper")) {
 			return Janken.PAPER;
@@ -155,6 +206,11 @@ public class JankenController extends HttpServlet {
 		}
 	}
 	
+	/**
+	 * Get bot's move based on the random generated int value.
+	 * @param num
+	 * @return PAPER, ROCK, or SCISSORS of Janken enum
+	 */
 	public Janken getBotMove(int num) {
 		if (num == 0) {
 			return Janken.PAPER;
