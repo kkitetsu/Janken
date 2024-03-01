@@ -1,7 +1,11 @@
 package controller;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -59,26 +63,67 @@ public class JankenController extends HttpServlet {
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
-		String userInput1 = request.getParameter("rock");
-		String userInput2 = request.getParameter("scissors");
-		String userInput3 = request.getParameter("paper");
-		Janken userMove = getUserMove(userInput1, userInput2, userInput3);
+		int numBot = Integer.parseInt(request.getParameter("numBot"));
+		
 		Random random = new Random();
-		int bot = random.nextInt(3);
-		Janken botMove = getBotMove(bot);
 		
-		String url = "WEB-INF/views/result.jsp";
-		String resultMessage = getResult(userMove, botMove);
+		Janken userMove = getUserMove(request.getParameter("selectedJanken"));
 		
-		// Images/paper.png
+		List<Janken> botsMove = new ArrayList<>();
+		List<String> botsMoveList = new ArrayList<>();
+		for (int i = 0; i < numBot; i++) {
+			botsMove.add(getBotMove(random.nextInt(3)));
+			botsMoveList.add("Images/" + botsMove.get(i).type + ".png");
+		}
+		
+		String resultMessage = getGameResult(userMove, botsMove);
 		String userMoveStr = "Images/" + userMove.type + ".png";
-		String botMoveStr  = "Images/" + botMove.type + ".png";
 		
 		request.setAttribute("result", resultMessage);
 		request.setAttribute("userMove", userMoveStr);	
-		request.setAttribute("botMove", botMoveStr);	
-		RequestDispatcher dispatcher = request.getRequestDispatcher(url);
+		request.setAttribute("botsMoveList", botsMoveList);	
+		RequestDispatcher dispatcher = request.getRequestDispatcher("WEB-INF/views/result.jsp");
 		dispatcher.forward(request, response);
+	}
+	
+	public String getGameResult(Janken userMove, List<Janken> botMove) {
+		if (botMove.size() == 1) {
+			return getResult(userMove, botMove.get(0));
+		}
+		return getGameResultMultiple(userMove, botMove);
+	}
+	
+	public String getGameResultMultiple(Janken userMove, List<Janken> botMove) {
+		Set<String> set = new HashSet<>();
+		set.add(userMove.type);
+		for (int i = 0; i < botMove.size(); i++) {
+			set.add(botMove.get(i).type);
+		}
+		if (set.contains(Janken.PAPER.type) && 
+			set.contains(Janken.ROCK.type) && 
+			set.contains(Janken.SCISSORS.type)) {
+			return "引き分け";
+		}
+		
+		set.remove(userMove.type); // Now the set only contains the bots' move
+		/**
+		 * Case 1: {user: paper, set(scissor, 
+		 * 
+		 * 
+		 */
+		String tmpp = "";
+		for (String each : set) {
+			System.out.println(each);
+			tmpp = each;
+		}
+		Janken tmp = Janken.PAPER;
+
+		if (tmpp.equals("rock")) {
+			tmp = Janken.ROCK;
+		} else if (tmpp.equals("scissors")) {
+			tmp = Janken.SCISSORS;
+		}
+		return getResult(userMove, tmp);
 	}
 	
 	public boolean userWins(int userInput, int bot) {
@@ -100,13 +145,13 @@ public class JankenController extends HttpServlet {
 		
 	}
 	
-	public Janken getUserMove(String r, String c, String p) {
-		if (r != null) {
-			return Janken.ROCK;
-		} else if (c != null) {
-			return Janken.SCISSORS;
-		} else {
+	public Janken getUserMove(String move) {
+		if (move.equals("paper")) {
 			return Janken.PAPER;
+		} else if (move.equals("rock")) {
+			return Janken.ROCK;
+		} else {
+			return Janken.SCISSORS;
 		}
 	}
 	
