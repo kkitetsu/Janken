@@ -21,20 +21,18 @@ import javax.servlet.http.HttpServletResponse;
 public class JankenController extends HttpServlet {
 	
 	public enum Janken {
-		ROCK(0, "rock"),
-		SCISSORS(1, "scissors"),
-		PAPER(2, "paper");
+		ROCK("rock"),
+		SCISSORS("scissors"),
+		PAPER("paper");
 		
-		private final int value;
 		private final String type;
 		
-		Janken(int value, String type) {
-			this.value = value;
+		Janken(String type) {
 			this.type  = type;
 		}
 		
-		public int getValue() { return value; }
 		public String getType() { return type; }
+		public boolean equals(Janken other) { return type == other.type;}
 		
 	}
 	
@@ -128,6 +126,11 @@ public class JankenController extends HttpServlet {
 		
 		set.remove(userMove.type); // Now the set only contains the bots' move
 		
+		// In the case the palyer and bots played exactly same move
+		if (set.isEmpty()) {
+			return "引き分け";
+		}
+		
 		/**
 		 * User's move is passed in the argument.
 		 * The set only contains the bot's move, and there are no duplicate.
@@ -157,19 +160,19 @@ public class JankenController extends HttpServlet {
 	
 	/**
 	 * Determine if user wins a single bot.
-	 * Based on the Janken enum, 0 is rock, 1 is scissor, and 2 is paper.
-	 * So, 0 wins 1, 1 wins 2, and 2 wins 0.
 	 * 
 	 * @param userInput
 	 * @param bot
 	 * @return true is user wins, false otherwise
 	 */
-	public boolean userWins(int userInput, int bot) {
-		return (userInput == 0 && bot == 1) || (userInput == 1 && bot == 2) || (userInput == 2 && bot == 0);
+	public boolean userWins(Janken userInput, Janken bot) {
+		return (userInput == Janken.ROCK && bot == Janken.SCISSORS) || 
+			   (userInput == Janken.PAPER && bot == Janken.ROCK) || 
+			   (userInput == Janken.SCISSORS && bot == Janken.PAPER);
 	}
 	
-	public boolean isDraw(int userInput, int bot) {
-		return userInput == bot;
+	public boolean isDraw(Janken userInput, Janken bot) {
+		return userInput.equals(bot);
 	}
 	
 	/**
@@ -180,9 +183,9 @@ public class JankenController extends HttpServlet {
 	 * @return "引き分け", "勝ち", or "負け"
 	 */
 	public String getResult(Janken userInput, Janken bot) {
-		if (isDraw(userInput.value, bot.value)) {
+		if (isDraw(userInput, bot)) {
 			return "引き分け";
-		} else if (userWins(userInput.value, bot.value)) {
+		} else if (userWins(userInput, bot)) {
 			return "勝ち";
 		} else {
 			return "負け";
