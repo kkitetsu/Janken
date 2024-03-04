@@ -111,20 +111,20 @@ public class JankenController extends HttpServlet {
 		 * By using set, we can reasonably ignore the duplicate, since 
 		 *   we don't care about duplicates. (2 rocks and 4 rocks, as long as they are played by bots it doesn't mater)
 		 */
-		Set<String> set = new HashSet<>();  
-		set.add(userMove.type);
+		Set<Janken> set = new HashSet<>();  
+		set.add(userMove);
 		for (int i = 0; i < botMove.size(); i++) {
-			set.add(botMove.get(i).type);
+			set.add(botMove.get(i));
 		}
 		
 		// if the set contains paper, rock, and scissor, it must be a draw
-		if (set.contains(Janken.PAPER.type) && 
-			set.contains(Janken.ROCK.type) && 
-			set.contains(Janken.SCISSORS.type)) {
+		if (set.contains(Janken.PAPER) && 
+			set.contains(Janken.ROCK) && 
+			set.contains(Janken.SCISSORS)) {
 			return "引き分け";
 		}
 		
-		set.remove(userMove.type); // Now the set only contains the bots' move
+		set.remove(userMove); // Now the set only contains the bots' move
 		
 		// In the case the palyer and bots played exactly same move
 		if (set.isEmpty()) {
@@ -139,23 +139,8 @@ public class JankenController extends HttpServlet {
 		 * So, we can safely call the function getResult to obtain the game result in string. 
 		 */
 		
-		// First, obtain the bot's move in string format
-		String tmpp = "";
-		for (String each : set) {
-			tmpp = each;
-		}
-		
-		// Then, prepare a Janken for bot
-		Janken tmp = Janken.PAPER;
-		
-		if (tmpp.equals("rock")) {
-			tmp = Janken.ROCK;
-		} else if (tmpp.equals("scissors")) {
-			tmp = Janken.SCISSORS;
-		}
-		
 		// After we have bot's move in Janken, call getResult with userMove Janken and tmp Janken
-		return getResult(userMove, tmp);
+		return getResult(userMove, set.iterator().next());
 	}
 	
 	/**
